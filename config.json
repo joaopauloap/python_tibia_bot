@@ -1,0 +1,16 @@
+{
+	"hotkeys":{
+		"hp":"F2",
+		"mana":"F4"
+	},
+
+	"limits":{
+		"hp":75,
+		"mana":50
+	},
+
+	"total":{
+		"hp":4340,
+		"mana":1455
+	}
+}
