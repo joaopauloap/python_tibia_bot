@@ -1,11 +1,8 @@
 {
-	"hotkeys":{
-		"hp":"F2",
-		"mana":"F4"
-	},
-
-	"limits":{
-		"hp":75,
-		"mana":50
-	}
+	"triggers":
+	[
+		{"type":"hp", "limit":50, "hotkey":"2"},
+		{"type":"hp", "limit":75, "hotkey":"1"},
+		{"type":"mana", "limit":75, "hotkey":"3"}
+	]
 }

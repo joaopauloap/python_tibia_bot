@@ -1,24 +1,19 @@
 import ctypes
+from ctypes import wintypes 
 import psutil
 import json
 import keyboard
 import time
 import sys
 import os
-from ctypes import wintypes
 import win32api
 import win32process
 import win32con
 
 with open('config.json', 'r') as file:
-    data = json.load(file)
+    config = json.load(file)
 
 process_name = "client.exe"
-
-hotkey_hp = data['hotkeys']['hp']
-hotkey_mana = data['hotkeys']['mana']
-limit_hp = data['limits']['hp'] 
-limit_mana = data['limits']['mana']
 
 
 def get_key_code(key_name):
@@ -60,7 +55,7 @@ def scan_addresses(target_value):
     current_address = start_address
     found_addresses = []
     founded_counter = 0
-    limit = 20
+    limit = 40
 
     while current_address < end_address:
         data = read_memory(process_handle, current_address, chunk_size)
@@ -68,7 +63,7 @@ def scan_addresses(target_value):
             for i in range(0, len(data), 4):  # Assumindo que estamos lendo valores inteiros de 4 bytes
                 value = int.from_bytes(data[i:i+4], byteorder='little', signed=False)
                 if value == target_value:
-                    print(f"{hex(current_address + i)}")
+                    #print(f"{hex(current_address + i)}")
                     found_addresses.append((current_address + i))
                     founded_counter+=1
         current_address += chunk_size
@@ -81,68 +76,76 @@ def scan_addresses(target_value):
 
     return found_addresses
 
-def enderecos_proximos(valor_x, enderecos, margem=500):
-    enderecos_proximos = []
+def find_address_minor_value(value_x, addresses, margin=500):
+    founded_addresses = []
+    for addr in addresses:
+        addrValue = getAddressValue(addr)
+        if (addrValue < value_x) and ((value_x - addrValue) < margin):
+            founded_addresses.append(addr)
     
-    for endereco in enderecos:
-        # Lê o valor na memória no endereço especificado
-        valor_na_memoria = getAddressValue(endereco)
-        # Verifica se o valor está dentro da margem de x
-        if (valor_na_memoria != valor_x) and (valor_x - valor_na_memoria < margem):
-            enderecos_proximos.append(endereco)
-    
-    return enderecos_proximos
+    return founded_addresses
 
-#Inicio    
+
+
+#Rotina principal    
 pid = get_pid_by_name(process_name)
 
 if pid is None:
     print(f"Processo '{process_name}' não encontrado.")
-else:
-    print(f"PID do processo '{process_name}': {pid}")
+    exit()
 
-    process_handle = ctypes.windll.kernel32.OpenProcess(0x0010, False, pid) #read only permission
+#print(f"PID do processo '{process_name}': {pid}")
 
-    if not process_handle:
-        print("Falha ao abrir o processo.")
-        exit()
-    print(f"Processo {pid} aberto com sucesso.")
+process_handle = ctypes.windll.kernel32.OpenProcess(0x0010, False, pid) #read only permission
 
-    # Obtendo parametros
-    # hp_input = input("Digite seu HP: ")
-    # mana_input = input("Digite sua Mana: ")
-    hp_input = 4850
-    mana_input = 1525
-    print("Aguarde...")
+if not process_handle:
+    print("Falha ao abrir o processo.")
+    exit()
+#print(f"Processo {pid} aberto com sucesso.")
 
-    listHpAddr1 = scan_addresses(hp_input)
-    listManaAddr1 = scan_addresses(mana_input)
+# Obtendo parametros
+print("Seu HP e MANA devem estar cheios para continuar.") 
+# hp_input = int(input("Digite seu HP: "))
+# mana_input = int(input("Digite sua Mana: "))
+hp_input = 4850
+mana_input = 1525
+print("Aguarde...")
 
-    print("ATENÇÃO, CALIBRAGEM! Perca um pouco de HP e Mana.")
-    input("Aperte ENTER quando finalizar a calibragem...")
+listHpAddr1 = scan_addresses(hp_input)
+listManaAddr1 = scan_addresses(mana_input)
 
-    os.system('clear')  # Para Linux/macOS
+if (len(listHpAddr1) == 0) or (len(listManaAddr1) == 0):
+    print("Erro: Não foi possível localizar os endereços!")
+    exit()
 
-    listHpAddr2 = enderecos_proximos(hp_input, listHpAddr1)
-    listManaAddr2 = enderecos_proximos(mana_input, listManaAddr1)
+print("ATENÇÃO, CALIBRAGEM! Perca um pouco de HP e MANA...")
 
-    address_hp = listHpAddr2[0]
-    address_mana = listManaAddr2[0]
+listHpAddr2 = []
+listManaAddr2 = []
 
-    while True:
-        hp = getAddressValue(address_hp)
-        mana = getAddressValue(address_mana)
+while (len(listHpAddr2) <= 0) or (len(listManaAddr2) <= 0):
+    if len(listHpAddr2) == 0:
+        listHpAddr2 = find_address_minor_value(hp_input, listHpAddr1)
+    if len(listManaAddr2) == 0:
+        listManaAddr2 = find_address_minor_value(mana_input, listManaAddr1)
 
-        print(f"hp:{hp}  |  mana:{mana}", end="\r", flush=True)
-        
-        # if hp < total_hp * (limit_hp/100):
-        #     #print("enviando hotkey_hp...")
-        #     keyboard.press(hotkey_hp)
-        
-        # if mana < total_mana * (limit_mana/100):
-        #     #print("enviando hotkey_mana...")
-        #     keyboard.press(hotkey_mana)
+os.system('cls')
 
-        time.sleep(0.5)
-        #closes
-    ctypes.windll.kernel32.CloseHandle(process_handle)
+while True:
+    hp = getAddressValue(listHpAddr2[0])
+    mana = getAddressValue(listManaAddr2[0])
+    print(f"hp:{hp}  |  mana:{mana}", end="\r", flush=True)
+    
+    #triggers and hotkeys
+
+    for trigger in config["triggers"]:
+        if trigger["type"] == "hp":
+            if hp < hp_input * (trigger["limit"]/100):
+                keyboard.press(trigger["hotkey"])
+        elif trigger["type"] == "mana":
+            if mana < mana_input * (trigger["limit"]/100):
+                keyboard.press(trigger["hotkey"])
+
+    time.sleep(0.2)
+    #closes
+ctypes.windll.kernel32.CloseHandle(process_handle)
