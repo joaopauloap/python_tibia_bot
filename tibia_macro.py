@@ -4,11 +4,7 @@ import psutil
 import json
 import keyboard
 import time
-import sys
 import os
-import win32api
-import win32process
-import win32con
 
 with open('config.json', 'r') as file:
     config = json.load(file)
@@ -49,13 +45,13 @@ def read_memory(process_handle, address, size):
         return None
 
 def scan_addresses(target_value):
-    start_address = 0x00000000
-    end_address = 0x7FFFFFFF
+    start_address = 0x0A000000
+    end_address = 0x0FFFFFFF
     chunk_size = 4096
     current_address = start_address
     found_addresses = []
     founded_counter = 0
-    limit = 40
+    limit = 100
 
     while current_address < end_address:
         data = read_memory(process_handle, current_address, chunk_size)
@@ -76,16 +72,6 @@ def scan_addresses(target_value):
 
     return found_addresses
 
-def find_address_minor_value(value_x, addresses, margin=500):
-    founded_addresses = []
-    for addr in addresses:
-        addrValue = getAddressValue(addr)
-        if (addrValue < value_x) and ((value_x - addrValue) < margin):
-            founded_addresses.append(addr)
-    
-    return founded_addresses
-
-
 
 #Rotina principal    
 pid = get_pid_by_name(process_name)
@@ -104,36 +90,44 @@ if not process_handle:
 #print(f"Processo {pid} aberto com sucesso.")
 
 # Obtendo parametros
-print("Seu HP e MANA devem estar cheios para continuar.") 
-# hp_input = int(input("Digite seu HP: "))
-# mana_input = int(input("Digite sua Mana: "))
-hp_input = 4850
-mana_input = 1525
+print("Atenção: Sua MANA deve estar cheia para a macro funcionar.") 
+hp_input = int(input("Digite seu HP total: "))
+mana_input = int(input("Digite sua Mana total: "))
 print("Aguarde...")
 
-listHpAddr1 = scan_addresses(hp_input)
 listManaAddr1 = scan_addresses(mana_input)
-
-if (len(listHpAddr1) == 0) or (len(listManaAddr1) == 0):
-    print("Erro: Não foi possível localizar os endereços!")
+# print(f"listManaAddr1: {listManaAddr1}")
+if len(listManaAddr1) == 0:
+    print("Erro: Não foi possível localizar os endereços! Sua MANA estava cheia?")
     exit()
 
-print("ATENÇÃO, CALIBRAGEM! Perca um pouco de HP e MANA...")
+print("ATENÇÃO, CALIBRAGEM! Gaste um pouco de MANA...")
 
-listHpAddr2 = []
-listManaAddr2 = []
+mana_addr = 0
+listFoundedAddr = []
+margin = 500
 
-while (len(listHpAddr2) <= 0) or (len(listManaAddr2) <= 0):
-    if len(listHpAddr2) == 0:
-        listHpAddr2 = find_address_minor_value(hp_input, listHpAddr1)
-    if len(listManaAddr2) == 0:
-        listManaAddr2 = find_address_minor_value(mana_input, listManaAddr1)
+while(mana_addr == 0):
+    for addr in listManaAddr1:
+        addrValue = getAddressValue(addr)
+        # print(f"addr:{addr} - value: {addrValue}")
+        if (addrValue < mana_input): 
+            listFoundedAddr.append(addr)
+    if(len(listFoundedAddr)>0):
+        mana_addr = min(listFoundedAddr)
+    time.sleep(0.1)
+
+# print(f"listFoundedAddr: {listFoundedAddr}")
+# print(f"mana_addr: {mana_addr}")
+
+
+hp_addr = mana_addr - 1312 #Teste: Localiza endereço do hp apartir do da mana
 
 os.system('cls')
 
 while True:
-    hp = getAddressValue(listHpAddr2[0])
-    mana = getAddressValue(listManaAddr2[0])
+    hp = getAddressValue(hp_addr)
+    mana = getAddressValue(mana_addr)
     print(f"hp:{hp}  |  mana:{mana}", end="\r", flush=True)
     
     #triggers and hotkeys
