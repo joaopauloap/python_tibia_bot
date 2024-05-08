@@ -91,7 +91,6 @@ if not process_handle:
 
 # Obtendo parametros
 print("Atenção: Sua MANA deve estar cheia para a macro funcionar.") 
-hp_input = int(input("Digite seu HP total: "))
 mana_input = int(input("Digite sua Mana total: "))
 print("Aguarde...")
 
@@ -107,6 +106,7 @@ mana_addr = 0
 listFoundedAddr = []
 margin = 500
 
+#Obter da lista o endereço com o valor menor que o input
 while(mana_addr == 0):
     for addr in listManaAddr1:
         addrValue = getAddressValue(addr)
@@ -119,25 +119,27 @@ while(mana_addr == 0):
 
 # print(f"listFoundedAddr: {listFoundedAddr}")
 # print(f"mana_addr: {mana_addr}")
-
-
-hp_addr = mana_addr - 1312 #Teste: Localiza endereço do hp apartir do da mana
+mana_total_addr = mana_addr + 8
+hp_addr = mana_addr - 1312 #Localiza endereço do hp apartir do da mana
+hp_total_addr = hp_addr + 8 
 
 os.system('cls')
 
 while True:
     hp = getAddressValue(hp_addr)
+    hp_total = getAddressValue(hp_total_addr)
     mana = getAddressValue(mana_addr)
-    print(f"hp:{hp}  |  mana:{mana}", end="\r", flush=True)
+    mana_total = getAddressValue(mana_total_addr)
+    print(f"HP:{hp}/{hp_total}   |   MANA:{mana}/{mana_total}", end="\r", flush=True)
     
     #triggers and hotkeys
 
     for trigger in config["triggers"]:
         if trigger["type"] == "hp":
-            if hp < hp_input * (trigger["limit"]/100):
+            if hp < hp_total * (trigger["limit"]/100):
                 keyboard.press(trigger["hotkey"])
         elif trigger["type"] == "mana":
-            if mana < mana_input * (trigger["limit"]/100):
+            if mana < mana_total * (trigger["limit"]/100):
                 keyboard.press(trigger["hotkey"])
 
     time.sleep(0.2)
