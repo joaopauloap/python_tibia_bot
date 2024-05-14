@@ -1,8 +1,12 @@
 {
 	"triggers":
 	[
-		{"type":"hp", "limit":65, "hotkey":"2"},
 		{"type":"hp", "limit":80, "hotkey":"1"},
-		{"type":"mana", "limit":80, "hotkey":"3"}
-	]
+		{"type":"hp", "limit":70, "hotkey":"2"},
+		{"type":"mana", "limit":75, "hotkey":"3"}
+	],
+
+	"offsets":{
+		"manaAddr-hpAddr":0
+	}
 }

@@ -17,6 +17,25 @@ mana_total_addr = 0
 hp_addr = 0
 hp_total_addr = 0
 running = True
+config = None
+
+
+def load_config():
+    global config
+    try:
+        with open('config.json', 'r') as file:
+            config = json.load(file)
+            #label_msg['text'] = "Configurações atualizadas"
+    except FileNotFoundError:
+        print("Arquivo de configuração 'config.json' não encontrado. Criando modelo padrão para ajuste.")    
+        messagebox.showinfo("Erro", "Arquivo de configuração 'config.json' não encontrado. Criando modelo padrão para ajuste.")   
+        model_config = {"triggers": [{"type": "hp", "limit": 80, "hotkey": "1"},{"type": "hp", "limit": 70, "hotkey": "2"},{"type": "mana", "limit": 75, "hotkey": "3"}],"offsets": {"manaAddr-hpAddr": 0}}
+        with open('config.json', 'w') as file:
+            json.dump(model_config, file, indent=4)
+        exit()
+    except:
+        print("Erro ao tentar carregar arquivo de configuração 'config.json'.")    
+        messagebox.showinfo("Erro", "Erro ao tentar carregar arquivo de configuração 'config.json'.")   
 
 def get_key_code(key_name):
     try:
@@ -58,7 +77,7 @@ def scan_addresses(target_value):
     current_address = start_address
     found_addresses = []
     founded_counter = 0
-    limit = 200
+    limit = 100
 
     while current_address < end_address:
         data = read_memory(process_handle, current_address, chunk_size)
@@ -110,6 +129,7 @@ def play_bot():
     global hp_total_addr
     global mana_addr
     global running
+    global config
 
     running = True
     button_start.config(text="Parar BOT", command=pause_bot)
@@ -172,7 +192,7 @@ def init_bot():
     #os.system('cls')
 
     mana_total_addr = mana_addr + 8
-    hp_addr = mana_addr - 1312 #Localiza endereço do hp apartir do da mana
+    hp_addr = mana_addr - config["offsets"]["manaAddr-hpAddr"] #Localiza endereço do hp apartir do da mana
     hp_total_addr = hp_addr + 8 
 
     label_msg.grid_remove()
@@ -181,14 +201,9 @@ def init_bot():
 
 
 
-
 #ROTINA PRINCIPAL
-try:
-    with open('config.json', 'r') as file:
-        config = json.load(file)
-except:
-    print("Erro: Arquivo de configuração config.json não encontrado.")    
-    messagebox.showinfo("Erro", "Arquivo de configuração 'config.json' não encontrado.")    
+
+load_config()
 
 pid = get_pid_by_name(process_name)
 
@@ -209,6 +224,10 @@ if not process_handle:
 
 
 #init_bot()
+
+
+
+
 
 
 #GUI
@@ -239,10 +258,12 @@ bar_mana.grid(row=1, column=1, padx=10, pady=1)
 button_start = tk.Button(root, text="Iniciar BOT", command=init_bot)
 button_start.grid(row=2, column=0, columnspan=2, pady=20)
 
-button_config = tk.Button(root, text="⚙")
+button_config = tk.Button(root, text="⚙", command=load_config)
 button_config.grid(row=0, column=3, columnspan=2, pady=0)
 
 label_msg = tk.Label(root, text="")
 
 root.mainloop()
 ctypes.windll.kernel32.CloseHandle(process_handle)
+
+
