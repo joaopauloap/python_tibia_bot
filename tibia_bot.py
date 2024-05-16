@@ -173,13 +173,17 @@ def init_bot():
     global hp_addr
     global hp_total_addr
     hp_input = simpledialog.askinteger("HP", "ATENÇÃO: Seu HP deve estar cheio.\nDigite seu HP total:")
+    root.update()
     mana_input = simpledialog.askinteger("MANA", "ATENÇÃO: Sua MANA deve estar cheia.\nDigite sua MANA total:")
-
+    
     # Obtendo parametros
-    # mana_input = int(input("ATENÇÃO: Sua MANA deve estar cheia para a macro funcionar.\nDigite sua Mana total: "))
+    # hp_input = int(input("ATENÇÃO: Seu HP deve estar cheio.\nDigite seu HP total: "))
+    # mana_input = int(input("ATENÇÃO: Sua MANA deve estar cheia.\nDigite sua Mana total: "))
     # if not mana_input:
     #     init_bot()
-
+    root.attributes('-topmost', True)
+    root.update()
+    
     button_start.grid_remove()
     label_msg.grid(row=2, column=0, columnspan=2, pady=20)
     label_msg['text'] = "Aguarde..."
@@ -208,6 +212,7 @@ def init_bot():
         exit()
 
     #os.system('cls')
+    root.attributes('-topmost', False)
 
     mana_total_addr = mana_addr + 8
     hp_total_addr = hp_addr + 8 

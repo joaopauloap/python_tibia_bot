@@ -1,8 +1,8 @@
 {
 	"triggers":
 	[
-		{"type":"hp", "limit":80, "hotkey":"1"},
+		{"type":"hp", "limit":90, "hotkey":"1"},
 		{"type":"hp", "limit":70, "hotkey":"2"},
-		{"type":"mana", "limit":75, "hotkey":"3"}
+		{"type":"mana", "limit":80, "hotkey":"3"}
 	]
 }
