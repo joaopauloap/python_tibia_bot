@@ -29,7 +29,7 @@ def load_config():
     except FileNotFoundError:
         print("Arquivo de configuração 'config.json' não encontrado. Criando modelo padrão para ajuste.")    
         messagebox.showinfo("Erro", "Arquivo de configuração 'config.json' não encontrado. Criando modelo padrão para ajuste.")   
-        model_config = {"triggers": [{"type": "hp", "limit": 80, "hotkey": "1"},{"type": "hp", "limit": 70, "hotkey": "2"},{"type": "mana", "limit": 75, "hotkey": "3"}],"offsets": {"manaAddr-hpAddr": 0}}
+        model_config = {"triggers": [{"type": "hp", "limit": 80, "hotkey": "1"},{"type": "hp", "limit": 70, "hotkey": "2"},{"type": "mana", "limit": 75, "hotkey": "3"}]}
         with open('config.json', 'w') as file:
             json.dump(model_config, file, indent=4)
         exit()
@@ -109,6 +109,15 @@ def scan_address_mana(list_addr, mana_input):
                     mana_addr = 0 #mantem o while e repete
                 else:
                     return mana_addr
+
+def scan_address_hp(hp_input, mana_addr):
+    limit=4000
+    for addr in range(mana_addr-limit, mana_addr):
+        if (get_value_addr(addr) == hp_input) and (get_value_addr(addr+8) == hp_input): 
+            return addr
+    return 0
+
+
 def clear_bars():
     label_hp['text'] = "HP\n-"
     label_mana['text'] = "MANA\n-"
@@ -140,13 +149,7 @@ def play_bot():
         hp_total = get_value_addr(hp_total_addr)
         mana = get_value_addr(mana_addr)
         mana_total = get_value_addr(mana_total_addr)
-        #print(f"HP:{hp}/{hp_total}   |   MANA:{mana}/{mana_total}", end="\r", flush=True)
-        label_hp['text'] = f"HP\n{hp}/{hp_total}"
-        label_mana['text'] = f"MANA\n{mana}/{mana_total}"
-        bar_hp['value'] = (hp*100)/hp_total
-        bar_mana['value'] = (mana*100)/mana_total
-        root.update()  # Atualiza a GUI
-        
+
         #triggers and hotkeys
         for trigger in config["triggers"]:
             if trigger["type"] == "hp":
@@ -156,12 +159,21 @@ def play_bot():
                 if mana < mana_total * (trigger["limit"]/100):
                     keyboard.press(trigger["hotkey"])
 
+        #print(f"HP:{hp}/{hp_total}   |   MANA:{mana}/{mana_total}", end="\r", flush=True)
+        label_hp['text'] = f"HP\n{hp}/{hp_total}"
+        label_mana['text'] = f"MANA\n{mana}/{mana_total}"
+        bar_hp['value'] = (hp*100)/hp_total
+        bar_mana['value'] = (mana*100)/mana_total
+        root.update()  # Atualiza a GUI
+        
+
 def init_bot():
     global mana_addr
     global mana_total_addr
     global hp_addr
     global hp_total_addr
-    mana_input = int(simpledialog.askstring("MANA", "ATENÇÃO: Sua MANA deve estar cheia para a macro funcionar.\nDigite sua MANA total:"))
+    hp_input = simpledialog.askinteger("HP", "ATENÇÃO: Seu HP deve estar cheio.\nDigite seu HP total:")
+    mana_input = simpledialog.askinteger("MANA", "ATENÇÃO: Sua MANA deve estar cheia.\nDigite sua MANA total:")
 
     # Obtendo parametros
     # mana_input = int(input("ATENÇÃO: Sua MANA deve estar cheia para a macro funcionar.\nDigite sua Mana total: "))
@@ -189,10 +201,15 @@ def init_bot():
         messagebox.showinfo("Erro", "Não foi possível localizar o endereço da MANA.")
         exit()
 
+    hp_addr = scan_address_hp(hp_input, mana_addr)
+    if(hp_addr <= 0):
+        print("Não foi possível localizar o endereço do HP.")
+        messagebox.showinfo("Erro", "Não foi possível localizar o endereço do HP.")
+        exit()
+
     #os.system('cls')
 
     mana_total_addr = mana_addr + 8
-    hp_addr = mana_addr - config["offsets"]["manaAddr-hpAddr"] #Localiza endereço do hp apartir do da mana
     hp_total_addr = hp_addr + 8 
 
     label_msg.grid_remove()
